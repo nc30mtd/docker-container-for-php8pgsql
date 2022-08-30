@@ -1,0 +1,51 @@
+version: "3"
+services:
+  #web
+  apache-php-web:
+    container_name: apache-php-web
+    build:
+      context: ./web
+      dockerfile: ./Dockerfile
+    privileged: true
+    environment:
+      APACHE_LOG_DIR: /var/log/apache2
+      TZ: "Asia/Tokyo"
+    volumes:
+      - ./web/apache/apache2.conf:/etc/apache2/apache2.conf
+      - ./web/apache/ports.conf:/etc/apache2/ports.conf
+      - ./web/apache/000-default.conf:/etc/apache2/sites-enabled/000-default.conf
+      - ./web/php/php.ini:/etc/php/php.ini
+      - ./docroot/html:/var/www/html
+      - ./docroot/pgadmin:/var/www/pgadmin
+      - ./docroot/opt:/var/www/opt
+    ports:
+      - 80:80
+      - 38080:38080
+    depends_on:
+      - postgresql
+    tty: true
+    stdin_open: true
+
+
+  #  #参考
+  #  #https://solutionware.jp/blog/2018/05/23/docker-tutorial-heroku-postgres/
+  postgresql:
+    container_name: postgresql    
+    image: postgres:14
+    #build:
+    #  context: ./database
+    #  dockerfile: ./Dockerfile
+    environment:
+      IMPORT_FROM_DIR: /data # db/sh/init.shで使う環境変数
+      POSTGRES_USER: databaseuser
+      POSTGRES_PASSWORD: databasepass
+      POSTGRES_DB: hogedb
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+      TZ: "Asia/Tokyo"
+    ports:
+      - 5432:5432
+    volumes:
+      - ./opt:/root/opt
+      - ./database/init:/docker-entrypoint-initdb.d # この中の.sh、.sqlファイルは自動実行される
+      - ./database/data:/data # db.dumpを配置する
+      - ./database/storage:/var/lib/postgresql/data # データベースデータを永続化する
